@@ -1,5 +1,5 @@
 # THE LEAGUE OF LEGENDS RANKED MATCHES ANALYSIS PROJECT
-** By Yulin Hong and Angela Chen **
+**Conducted by Yulin Hong and Angela Chen**
 ## Introduction
 
 The League of Legends (LOL) is a multiplayer online battle arena game developed by Riot in 2009. In each match, 10 players are divided into two teams, red and blue. In its most played mode, the Summoner’s Rift, each player needs to control a character known as champion to defend their team’s base and invade the other half of the map. A team wins by destroying the Nexus in front of the enemy team’s base.

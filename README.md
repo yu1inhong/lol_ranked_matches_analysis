@@ -41,3 +41,88 @@ A correlation matrix was created to examine the multicollinearity issue. Duratio
 <p align="center">
     Correlation Matrix
 </p>
+
+## Model Selection and Results
+### Classification Model
+#### Principal Component Analysis
+Principal component analysis (PCA) is used to find a low-dimensional representation of the data that captures maximum variability. Since there are 22 variables excluding the match ID and team ID and there are 3432 observations, K, in this case, will be 22.
+
+<p align="center">
+  <img src="https://github.com/yu1inhong/lol_ranked_matches_analysis/blob/main/image/Screen%20Shot%202022-02-07%20at%2011.38.42%20AM.png" alt="drawing" width="600"/>
+</p>
+<p align="center">
+    PCA plot
+</p>
+
+From the principal component graph, two main directions are orthogonal to each other, where predictors are relatively correlated to each other in the two directions. For example, gold spent and champion level are highly correlated, and first blood and first dragon are highly correlated. In addition, the target variable win belongs to one of the directions, meaning predictors in the other direction might not be particularly useful to explain the variations.
+
+Next, the percentage of variation in each component is calculated. With approximately 5 components, 80% accuracy can be recognized. In the first principal component, total damage dealt, the total damage to champions, gold earned, gold spent, champion level and duration are the main contributors. And in the second principal component, win, total damage taken, first inhibitor, tower kills, inhibitor kills are the main contributors. Similarly for other components, the greater the absolute value, the more it contributes to the component.
+
+<p align="center">
+  <img src="https://github.com/yu1inhong/lol_ranked_matches_analysis/blob/main/image/Screen%20Shot%202022-02-07%20at%2011.41.43%20AM.png" alt="drawing" width="600"/>
+</p>
+<p align="center">
+    Percentage of Variance explained plot
+</p>
+
+Overall, the result of the principal component analysis will be used as a tool to find the final list of predictors for the classification model. Overall, the predictors that will be used in the model are: KDA, the total damage to champions, total damage taken, champion level, tower kills, inhibitor kills, duration, first inhibitor, and baron kills.
+
+#### Model selection
+
+Both classification techniques and tree-based methods are used in the model selection process (Table 1). For the classification techniques, logistic regression and discriminant analysis are constructed. And for the tree-based methods, decision tree, random forest, and boosted forest are built. Among all the models that were built using the same set of predictors, the accuracy score of the boosted forest is the highest, which is 96.9%.
+  
+| |1|2|3|4|5|
+|:---|:---|:---|:---|:---|:---|
+|Model| Logistic Regression|LDA|Decision Tree| Random Forest|Boosted Forest|
+|Accuracy|0.948|0.943|0.909|0.950|0.969|
+
+<p align="center">
+    Table 1
+</p>
+
+In the boosted forest model, the parameter of distribution is set to be Bernoulli because the target variable is binary. The model will develop 10000 trees, and the number of internal nodes for each tree is set to be 8. The means square error of the model is approximately 4858.
+
+To test for accuracy, the dataset was first split into training and testing sets, with a ratio of 0.75 being the training set and the remaining being the testing set. Then, the boosted forest model was built with the same parameters as mentioned above. The model next predicts the testing set, and the value will round up to 1 if the result is greater than 0.5, and round down to 0 if the result is less or equal to 0.5. Lastly, the accuracy score is calculated by comparing the predicted result to the actual result. An accuracy score of 0.969 represents the boosted forest model that can correctly predict the outcome of the match in a 96.9% chance.
+
+#### Results and interpretations
+
+From the summary of the boosted forest model, the relative importance is shown. Tower kills has the highest score, which is approximately 39.7, and inhibitor kill is the second most important predictor with a score around 33.3. The remaining predictors have a smaller score compared to these two predictors.
+
+To compare the current model with a model that includes all the predictors in the initial dataset, a second model with all available predictors is built. Nevertheless, this new model does not include identifiers such as match ID. The model shows that inhibitor kills and tower kills remain the top two most important predictors, while the rest of the predictors have a much lower importance score. The accuracy score of this new model is slightly lower, which is approximately 95.4%. However, the mean square error (MSE) is around 4608, which is 250 less than the MSE of the original model. Overall, the original model would perform better.
+
+The boosted forest utilizes the boosting mechanism to improve the generalizability of the trees, where the trees are trained sequentially. Hence, the model performs the best among all the remaining models. The model could potentially help players predict the outcome using available information before the game and improve equipment or techniques if needed.
+
+### Clustering
+
+The League of Legends ranking system assigns players to components that share the same level of gaming ability with them. This means that a match’s participants should have around a similar rank. Through clustering models, we aimed to segment matches into different clusters, mapped each cluster to the possible tire, and examined the characteristic of each cluster and the tire it represents. However, most of the predictors in the dataset are highly dependent on the predictor duration. For example, if the duration of a match is long, the total damage dealt will accumulate as the match continues. Hence, we need to “normalize” the predictors to obtain a better clustering result. To normalize these predictors, we simply divide them by the duration so that all the match statistics become per second statistics. Moreover, because each match statistic relates to two teams’ statistics and these two teams’ statistics are complementary to each other’s, we only keep all the winning teams’ statistics to feed into the clustering model.
+
+Before we started to apply the clustering model, we first examined the outliers of each predictor by checking the data points that lie outside of the 0.01% to 99.9% quantile of each predictor. Since the K-Means clustering method clusters data based on the distance between each data point, outliers in the dataset can affect the clustering result. Hence, removing the outliers can greatly improve the quality of clustering. We chose to remove data points that are outliers for two or more predictors.
+
+After preprocessing the dataset, we used Silhouette Score and Elbow Method to find the optimal number of clusters for the K-Means method. The results both indicate that the optimal cluster number is around 4. After setting the K value and running the K- Means function, we obtained the clustering result and mean values of variables in each cluster.
+
+<p align="center">
+  <img src="https://github.com/yu1inhong/lol_ranked_matches_analysis/blob/main/image/Screen%20Shot%202022-02-07%20at%2011.51.30%20AM.png" alt="drawing" width="400"/>
+</p>
+<p align="center">
+    Finding Optimal Cluster Numbers, Elbow Method
+</p>
+
+<p align="center">
+  <img src="https://github.com/yu1inhong/lol_ranked_matches_analysis/blob/main/image/Screen%20Shot%202022-02-07%20at%2011.51.38%20AM.png" alt="drawing" width="400"/>
+</p>
+<p align="center">
+    Finding Optimal Cluster Numbers, Silhouette Method
+</p>
+
+There are in total 1712 observations that were fed into the K-Means model. The resulting 4 clusters have the size 28,797,162 and 725 respectfully. The first cluster contains 1.63% of the total matches. The average game statistics in the first cluster are the worst. The total damage and total damage to champion statistics are very low, meaning that these players did not land their skills on the enemy’s champions at all. Moreover, they are not interested in push towers or killing dragons, which are two crucial factors that lead to the success of one match. Hence, the corresponding tire of this cluster should be the lowest rank in the League, Bronze V, in which [the actual percentage in Season 8](https://www.esportstales.com/league-of-legends/rank-distribution-season-8) is 1.70%. The fourth cluster has the second-lowest performance. The amount of damage they dealt as well as gold earned per second is lower than Cluster 3 and Cluster 2. This cluster includes around 42.35% of rank matches and it matches the distribution of Bronze IV to Silver I in Seasons 8.
+
+Cluster 2 and Cluster 3 did not vary much by game statistics. In general, Cluster 3 has higher average statistics in most variables, but Cluster 2 has higher KDA, tower Kills, and Baron Kills. However, we still consider Cluster 3 to be the highest rank cluster because one of the crucial differences between entry-level players and skillful players is the ability to accumulate gold. In fact, in the League of Legends World Championship gold earn is one of the key elements when we measure the performance of a team. Given that Cluster 3 has the highest gold earn per second, the players in this Cluster are top-ranked players. By mapping the cluster size to the Season 8 rank distribution again, we concluded that players in this cluster are from Dimond V to Challengers. Finally for Cluster 2, the players are from Gold V to Dimond V.
+
+## Managerial Conclusion
+Overall, League of Legends is the most popular game in the world since 2012, and it held the annual World Championship hosted by Riot Games. The goals of this analysis are: classifying the League of Legends rank matches’ outcomes using game statistics related to the matches, and clustering teams to examine their similarities and differences. Throughout the analysis, data collection, preprocessing, descriptive analysis, model selection, and result analysis were conducted.
+
+For the classification task, nine predictors were used in the classification models, and five models were built. The best model with the highest accuracy score is the boosted forest model. Tower kill and inhibitor kill are the most important predictors, meaning the number of towers and inhibitors that a team killed are significant predictors to forecast the outcome of the match for that team. This result explains the main difference between League of Legends with other games such as PUBG. The League of Legends is not a game that individual players’ ability can dominate the outcome of a match. Conversely, a team needs to work together to take down enemies’ towers and inhibitors to win a game.
+
+The clustering result shares the same information as discussed above, but it also provides more insights on how high-level players difference from entry-level players. They might not be the group with the highest KDA, but they focus more on the farm. After all, farming is the most stable way to accumulate gold and finish your final build as soon as possible. Moreover, they did not have the highest number of tower kills but they have the highest number of inhibitor kills. This might be counter-intuitive because every inhibitor is guard by a tower. However, if you destroy an inhibitor it will respawn after 5 minutes and every time you destroy it, you can send 8 waves of super minions, the strongest minions of all types, to help you push and fight in the lane. Thus, when players are considering winning a game as efficiently as possible, they should target more on inhibitors and utilize the super minion waves to help them secure success.
+
+Overall, these two models serve as great tools to analyze the League of Legends matches. In terms of potential improvement, the classification models can incorporate additional predictors such as type of the dragons killed in a game if the data is available. By including more detailed data, this model can be considered a powerful tool for coaches of the professional gaming teams to analyze the current situation of the teams during important circumstances such as the World Championship. The coaches can input their strategies into the model, for example, take the fire dragon instead of baron, and simulate the win rate based on these strategies. By doing so, coaches can communicate with players in time and help them to seize more opportunities to win.
